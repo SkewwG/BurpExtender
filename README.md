@@ -6,11 +6,7 @@
 
 暂时只能检测报错注入和延时注入
 
-本插件使用了队列，所以需要安装queue模块
-
-`python2 -m pip install queue`
-
-安装好queue模块后，一定要加载模块目录
+一定要加载模块目录
 
 ![](./imgs/SQL/0.png)
 
@@ -94,3 +90,11 @@ sqlChecked.txt保存检测过的数据包：请求方式，请求路径，参数
 
 如下图：检测出是同一个数据包，那么就不会调用payload重复测试
 ![](./imgs/SQL/8.png)
+
+同时会在Scanner模块的报告里显示存在注入的数据包
+
+![](./imgs/SQL/11.png)
+
+![](./imgs/SQL/12.png)
+
+![](./imgs/SQL/13.png)

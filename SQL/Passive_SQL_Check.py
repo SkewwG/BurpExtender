@@ -12,8 +12,7 @@ import os
 from urlparse import urlparse
 import xml
 from collections import OrderedDict
-from queue import Queue
-
+from Queue import Queue
 # 盲注payload的时间
 TIMEOUT = 8
 
@@ -87,7 +86,6 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
         # 注册扫描
         callbacks.registerScannerCheck(self)
 
-        self.issues = []
         print 'Load successful\nProject payload from https://github.com/lufeirider/SqlChecker'
 
     # 获取请求的url
@@ -98,23 +96,20 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
 
     # 获取请求的一些信息：请求头，请求内容，请求方法，请求参数
     def get_request_info(self, request):
-        analyzedRequest = self._helpers.analyzeRequest(
-            request)  # analyzeRequest用于分析HTTP请求，并获取有关它的各种关键详细信息。生成的IRequestInfo对象
-        reqHeaders = analyzedRequest.getHeaders()  # 用于获取请求中包含的HTTP头。返回：请求中包含的HTTP标头。
-        reqBodys = request[analyzedRequest.getBodyOffset():].tostring()  # 获取消息正文开始的请求中的偏移量。返回：消息正文开始的请求中的偏移量。
-        reqMethod = analyzedRequest.getMethod()  # 获取请求方法
-        reqParameters = analyzedRequest.getParameters()
-        return analyzedRequest, reqHeaders, reqBodys, reqMethod, reqParameters
+        analyzedIRequestInfo = self._helpers.analyzeRequest(request)  # analyzeRequest用于分析HTTP请求，并获取有关它的各种关键详细信息。生成的IRequestInfo对象
+        reqHeaders = analyzedIRequestInfo.getHeaders()  # 用于获取请求中包含的HTTP头。返回：请求中包含的HTTP标头。
+        reqBodys = request[analyzedIRequestInfo.getBodyOffset():].tostring()  # 获取消息正文开始的请求中的偏移量。返回：消息正文开始的请求中的偏移量。
+        reqMethod = analyzedIRequestInfo.getMethod()  # 获取请求方法
+        reqParameters = analyzedIRequestInfo.getParameters()
+        return analyzedIRequestInfo, reqHeaders, reqBodys, reqMethod, reqParameters
 
     # 获取响应的一些信息：响应头，响应内容，响应状态码
     def get_response_info(self, response):
-        analyzedResponse = self._helpers.analyzeResponse(
-            response)  # analyzeResponse方法可用于分析HTTP响应，并获取有关它的各种关键详细信息。返回：IResponseInfo可以查询的对象以获取有关响应的详细信息。
-        resHeaders = analyzedResponse.getHeaders()  # getHeaders方法用于获取响应中包含的HTTP标头。返回：响应中包含的HTTP标头。
-        resBodys = response[
-                   analyzedResponse.getBodyOffset():].tostring()  # getBodyOffset方法用于获取消息正文开始的响应中的偏移量。返回：消息正文开始的响应中的偏移量。response[analyzedResponse.getBodyOffset():]获取正文内容
-        resStatusCode = analyzedResponse.getStatusCode()  # getStatusCode获取响应中包含的HTTP状态代码。返回：响应中包含的HTTP状态代码。
-        return resHeaders, resBodys, resStatusCode
+        analyzedIResponseInfo = self._helpers.analyzeRequest(response)  # analyzeResponse方法可用于分析HTTP响应，并获取有关它的各种关键详细信息。返回：IResponseInfo可以查询的对象以获取有关响应的详细信息。
+        resHeaders = analyzedIResponseInfo.getHeaders()  # getHeaders方法用于获取响应中包含的HTTP标头。返回：响应中包含的HTTP标头。
+        resBodys = response[analyzedIResponseInfo.getBodyOffset():].tostring()  # getBodyOffset方法用于获取消息正文开始的响应中的偏移量。返回：消息正文开始的响应中的偏移量。response[analyzedResponse.getBodyOffset():]获取正文内容
+        # resStatusCode = analyzedIResponseInfo.getStatusCode()  # getStatusCode获取响应中包含的HTTP状态代码。返回：响应中包含的HTTP状态代码。
+        return resHeaders, resBodys
 
     # 获取服务端的信息，主机地址，端口，协议
     def get_server_info(self, httpService):
@@ -166,19 +161,18 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
                 return True
 
     # 获取请求的时间
-    def getRequestsTime(self, request, host, port, ishttps, parameterName, parameterValueSQL, parameterType):
+    def getRequestsTime(self, request, httpService, parameterName, parameterValueSQL, parameterType):
         # 构造参数
         newParameter = self._helpers.buildParameter(parameterName, parameterValueSQL, parameterType)
 
         # 更新参数，并发送请求
         newRequest = self._helpers.updateParameter(request, newParameter)
-        newAnalyzedRequest, newReqHeaders, newReqBodys, newReqMethod, newReqParameters = self.get_request_info(
-            newRequest)
+        newAnalyzedRequest, newReqHeaders, newReqBodys, newReqMethod, newReqParameters = self.get_request_info(newRequest)
 
         start_time = time.time()
 
         # 新的响应
-        newResponse = self._callbacks.makeHttpRequest(host, port, ishttps, newRequest)
+        newResponse = self._callbacks.makeHttpRequest(httpService, newRequest)
 
         # 请求超时，返回None
         if newResponse == None:
@@ -194,7 +188,7 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
     # 检测注入
     def checkInject(self, parameterSQLsQueue):
         while not parameterSQLsQueue.empty():
-            request, protocol, host, port, ishttps, parameterName, parameterValue, payload, parameterType, dbms, reqUrl = parameterSQLsQueue.get()
+            request, protocol, httpService, parameterName, parameterValue, payload, parameterType, dbms, reqUrl = parameterSQLsQueue.get()
             parameterValueSQL = parameterValue + payload.format(TIMEOUT=TIMEOUT)
             # 构造参数
             newParameter = self._helpers.buildParameter(parameterName, parameterValueSQL, parameterType)
@@ -207,14 +201,15 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
             start_time = time.time()
 
             # 新的响应
-            newResponse = self._callbacks.makeHttpRequest(host, port, ishttps, newRequest)
-
+            newIHttpRequestResponse = self._callbacks.makeHttpRequest(httpService, newRequest)          # IHttpRequestResponse
+            # print dir(newResponse)
             # 请求超时，pass该payload -> 所以continue
-            if newResponse == None:
+            if newIHttpRequestResponse == None:
                 print '{} Response is None'.format(parameterValueSQL)
                 continue
-            newResHeaders, newResBodys, newResStatusCode = self.get_response_info(newResponse)
 
+            response = newIHttpRequestResponse.getResponse()        # 获取响应包
+            newResHeaders, newResBodys = self.get_response_info(response)
 
             end_time = time.time()
             cost_time = end_time - start_time       # 获取盲注payload的响应时间
@@ -225,7 +220,7 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
             if cost_time > TIMEOUT:
                 # 再次探测, 设置payload的超时为0，然后设置相应时间少于4秒则排除网络误报
                 parameterValueSQL = parameterValue + payload.format(TIMEOUT=0)
-                if self.getRequestsTime(request, host, port, ishttps, parameterName, parameterValueSQL, parameterType) < 4:
+                if self.getRequestsTime(request, httpService, parameterName, parameterValueSQL, parameterType) < 4:
                     isTimeSql, regexp_ret = True, None
                 else:
                     isTimeSql, regexp_ret = False, None
@@ -244,11 +239,11 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
                 self.save(content)
 
                 self.issues.append(CustomScanIssue(
-                    self.baseRequestResponse.getHttpService(),
-                    self._helpers.analyzeRequest(self.baseRequestResponse).getUrl(),
-                    [self.baseRequestResponse],
+                    newIHttpRequestResponse.getHttpService(),
+                    self._helpers.analyzeRequest(newIHttpRequestResponse).getUrl(),
+                    [newIHttpRequestResponse],
                     "SQL",
-                    "Sensitive directory or file likely leaked",
+                    "Error Inject",
                     "High"))
 
             # 延时注入
@@ -258,6 +253,15 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
                 print '[+] [Time] dbms: [{}]\nReqMethod: [{}]\nReqUrl: [{}]\nparameter: [{}]\nparameterValue: [{}]\nregexp_ret: [{}]\n'.format(
                                 dbms, newReqMethod, newReqUrl, parameterName, parameterValueSQL, regexp_ret)
                 self.save(content)
+
+                self.issues.append(CustomScanIssue(
+                    newIHttpRequestResponse.getHttpService(),
+                    self._helpers.analyzeRequest(newIHttpRequestResponse).getUrl(),
+                    [newIHttpRequestResponse],
+                    "SQL",
+                    "Time Inject",
+                    "High"))
+
             else:
                 pass
 
@@ -267,17 +271,17 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
     # 开始检测
     def start_run(self, baseRequestResponse):
         self.baseRequestResponse = baseRequestResponse
+
         # 获取请求包的数据
-        request = baseRequestResponse.getRequest()
+        request = self.baseRequestResponse.getRequest()
         analyzedRequest, reqHeaders, reqBodys, reqMethod, reqParameters = self.get_request_info(request)
 
         # 获取响应包的数据
-        # response = currentRequestResponse.getResponse()  # getResponse方法用于检索请求消息。返回：响应消息。
-        # resHeaders, resBodys, resStatusCode = self.get_response_info(response)
+        # resHeaders, resBodys = self.get_response_info(self.baseRequestResponse)
         # self.save(resBodys)
 
         # 获取服务信息
-        httpService = baseRequestResponse.getHttpService()
+        httpService = self.baseRequestResponse.getHttpService()
         host, port, protocol, ishttps = self.get_server_info(httpService)
 
         # 获取请求的url
@@ -294,16 +298,11 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
         url_parse = urlparse(reqUrl)
         noParameterUrl = url_parse.scheme + '://' + url_parse.netloc + url_parse.path
 
-        # print 'reqUrl : ', reqUrl
-        # print 'noParameterUrl : ', noParameterUrl
-        # print 'reqMethod : ', reqMethod
-        # print 'parameterNames : ', parameterNames
-
         # 通过url，方法，参数 -> 识别数据包是否检测过
         json_data = {"noParameterUrl": noParameterUrl, "method": reqMethod, "parameterNames": parameterNames}
         if not self.isNotCheck(json_data):
             print '[checked] {}'.format(json_data)
-            return True
+            #return True
         self.save_checked(json_data)
 
         # 打印payload
@@ -317,7 +316,7 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
             parameterName, parameterValue, parameterType = self.get_parameter_Name_Value_Type(parameter)
             for dbms in self.fuzzSQL.payloads_dict:
                 for payload in self.fuzzSQL.payloads_dict[dbms]:
-                    parameterSQLsQueue.put([request, protocol, host, port, ishttps, parameterName, parameterValue, payload,
+                    parameterSQLsQueue.put([request, protocol, httpService, parameterName, parameterValue, payload,
                                     parameterType, dbms, reqUrl])  # 构造新的参数值，带有sql测试语句
 
         # 多线程跑每个payload
@@ -335,8 +334,27 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
 
 
     def doPassiveScan(self, baseRequestResponse):
+        '''
+        :param baseRequestResponse: IHttpRequestResponse
+        :return:
+        '''
+        self.issues = []
         self.start_run(baseRequestResponse)
-        # currentRequestResponse = self.invocation.getSelectedMessages()[0]  # getSelectedMessages()返回IHttpRequestResponse 数组，但有时为1个，有时2个
+        return self.issues
+
+
+    def consolidateDuplicateIssues(self, existingIssue, newIssue):
+        '''
+        相同的数据包，只报告一份报告
+        :param existingIssue:
+        :param newIssue:
+        :return:
+        '''
+
+        if existingIssue.getIssueDetail() == newIssue.getIssueDetail():
+            return -1
+
+        return 0
 
 
 class CustomScanIssue(IScanIssue):
