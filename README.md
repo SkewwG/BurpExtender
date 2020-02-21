@@ -98,3 +98,51 @@ sqlChecked.txt保存检测过的数据包：请求方式，请求路径，参数
 ![](./imgs/SQL/12.png)
 
 ![](./imgs/SQL/13.png)
+
+
+## Fastjson RCE检测插件
+
+加载Fastjson RCE插件后，当数据包的参数是json时，触发插件检测。
+
+当检测出fastjson rce时，打印[+], 如果该数据包检测过，打印[checked]
+
+![](./imgs/Fastjson/0.png)
+
+检测过的url保存在当前的fastjsonChecked.txt里
+
+![](./imgs/Fastjson/1.png)
+
+存在漏洞的url保存在当前的isFastjsonRCE.txt里
+
+![](./imgs/Fastjson/2.png)
+
+在issue模块里显示存在漏洞的数据包
+
+![](./imgs/Fastjson/3.png)
+
+可以查看请求包
+
+![](./imgs/Fastjson/4.png)
+
+
+# 上传FUZZ插件
+
+![](./imgs/Upload/8.png)
+
+![](./imgs/Upload/9.png)
+
+![](./imgs/Upload/10.png)
+
+![](./imgs/Upload/1.png)
+
+![](./imgs/Upload/2.png)
+
+![](./imgs/Upload/3.png)
+
+![](./imgs/Upload/4.png)
+
+![](./imgs/Upload/5.png)
+
+![](./imgs/Upload/6.png)
+
+![](./imgs/Upload/7.png)

@@ -86,7 +86,7 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
         # 注册扫描
         callbacks.registerScannerCheck(self)
 
-        print 'Load successful\nProject payload from https://github.com/lufeirider/SqlChecker'
+        print 'Load successful - auther:ske\nProject payload from https://github.com/lufeirider/SqlChecker'
 
     # 获取请求的url
     def get_request_url(self, protocol, reqHeaders):
@@ -167,7 +167,7 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
 
         # 更新参数，并发送请求
         newRequest = self._helpers.updateParameter(request, newParameter)
-        newAnalyzedRequest, newReqHeaders, newReqBodys, newReqMethod, newReqParameters = self.get_request_info(newRequest)
+        # newAnalyzedRequest, newReqHeaders, newReqBodys, newReqMethod, newReqParameters = self.get_request_info(newRequest)
 
         start_time = time.time()
 
@@ -302,7 +302,7 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
         json_data = {"noParameterUrl": noParameterUrl, "method": reqMethod, "parameterNames": parameterNames}
         if not self.isNotCheck(json_data):
             print '[checked] {}'.format(json_data)
-            #return True
+            return True
         self.save_checked(json_data)
 
         # 打印payload
@@ -359,6 +359,15 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
 
 class CustomScanIssue(IScanIssue):
     def __init__(self, httpService, url, httpMessages, name, detail, severity):
+        '''
+
+        :param httpService: HTTP服务
+        :param url: 漏洞url
+        :param httpMessages: HTTP消息
+        :param name: 漏洞名
+        :param detail: 漏洞细节
+        :param severity: 漏洞等级
+        '''
         self._httpService = httpService
         self._url = url
         self._httpMessages = httpMessages
