@@ -146,3 +146,10 @@ sqlChecked.txt保存检测过的数据包：请求方式，请求路径，参数
 ![](./imgs/Upload/6.png)
 
 ![](./imgs/Upload/7.png)
+
+
+# Shiro插件
+
+![](./imgs/Shiro/shiro1.png)
+
+![](./imgs/Shiro/shiro2.png)

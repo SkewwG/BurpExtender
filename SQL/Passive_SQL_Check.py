@@ -13,6 +13,7 @@ from urlparse import urlparse
 import xml
 from collections import OrderedDict
 from Queue import Queue
+from traceback import print_exception
 # 盲注payload的时间
 TIMEOUT = 8
 
@@ -111,6 +112,7 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
         # resStatusCode = analyzedIResponseInfo.getStatusCode()  # getStatusCode获取响应中包含的HTTP状态代码。返回：响应中包含的HTTP状态代码。
         return resHeaders, resBodys
 
+
     # 获取服务端的信息，主机地址，端口，协议
     def get_server_info(self, httpService):
         host = httpService.getHost()
@@ -160,6 +162,15 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
             else:
                 return True
 
+    # 过滤一些css等后缀
+    def filter_url(self, reqUrl):
+        noCheckedSuffix = ['css', 'js', 'jpg', 'gif', 'html', 'png', 'ico']
+        if reqUrl.split('.')[-1] in noCheckedSuffix:
+            return True
+        else:
+            return False
+
+
     # 获取请求的时间
     def getRequestsTime(self, request, httpService, parameterName, parameterValueSQL, parameterType):
         # 构造参数
@@ -205,10 +216,14 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
             # print dir(newResponse)
             # 请求超时，pass该payload -> 所以continue
             if newIHttpRequestResponse == None:
-                print '{} Response is None'.format(parameterValueSQL)
+                # print '{} IHttpRequestResponse is None'.format(parameterValueSQL)
                 continue
 
             response = newIHttpRequestResponse.getResponse()        # 获取响应包
+            if response == None:
+                # print '{} Response is None'.format(parameterValueSQL)
+                continue
+
             newResHeaders, newResBodys = self.get_response_info(response)
 
             end_time = time.time()
@@ -221,7 +236,12 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
                 # 再次探测, 设置payload的超时为0，然后设置相应时间少于4秒则排除网络误报
                 parameterValueSQL = parameterValue + payload.format(TIMEOUT=0)
                 if self.getRequestsTime(request, httpService, parameterName, parameterValueSQL, parameterType) < 4:
-                    isTimeSql, regexp_ret = True, None
+                    # 再次探测, 设置payload的超时为10，然后设置相应时间少于4秒则排除网络误报
+                    parameterValueSQL = parameterValue + payload.format(TIMEOUT=10)
+                    if self.getRequestsTime(request, httpService, parameterName, parameterValueSQL, parameterType) > 10:
+                        isTimeSql, regexp_ret = True, None
+                    else:
+                        isTimeSql, regexp_ret = False, None
                 else:
                     isTimeSql, regexp_ret = False, None
             else:
@@ -242,8 +262,8 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
                     newIHttpRequestResponse.getHttpService(),
                     self._helpers.analyzeRequest(newIHttpRequestResponse).getUrl(),
                     [newIHttpRequestResponse],
-                    "SQL",
-                    "Error Inject",
+                    "Error SQL - {}".format(dbms),
+                    "Error Inject {} : {}".format(dbms, regexp_ret),
                     "High"))
 
             # 延时注入
@@ -258,13 +278,12 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
                     newIHttpRequestResponse.getHttpService(),
                     self._helpers.analyzeRequest(newIHttpRequestResponse).getUrl(),
                     [newIHttpRequestResponse],
-                    "SQL",
-                    "Time Inject",
+                    "Time SQL - {}".format(dbms),
+                    "Time Inject {}".format(dbms),
                     "High"))
 
             else:
                 pass
-
 
 
 
@@ -274,6 +293,7 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
 
         # 获取请求包的数据
         request = self.baseRequestResponse.getRequest()
+
         analyzedRequest, reqHeaders, reqBodys, reqMethod, reqParameters = self.get_request_info(request)
 
         # 获取响应包的数据
@@ -286,6 +306,13 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
 
         # 获取请求的url
         reqUrl = self.get_request_url(protocol, reqHeaders)
+
+        print 'start check url: {}'.format(reqUrl)
+        if self.filter_url(reqUrl):
+            print 'not check url: {}'.format(reqUrl)
+            return
+
+
 
         # 分离出参数名, 例如：parameterNames: PHPSESSID&uname&passwd&submit
         parameterNames = ''
@@ -321,7 +348,7 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
 
         # 多线程跑每个payload
         threads = []
-        for i in range(10):
+        for i in range(30):
             t = Thread(target=self.checkInject, args=(parameterSQLsQueue, ))
             t.start()
             threads.append(t)
