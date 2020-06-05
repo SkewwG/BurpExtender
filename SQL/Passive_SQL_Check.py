@@ -127,7 +127,7 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
     def get_parameter_Name_Value_Type(self, parameter):
         parameterName = parameter.getName()
         parameterValue = parameter.getValue()
-        parameterType = parameter.getType()
+        parameterType = parameter.getType()         # Cookies 2， POST 1
         return parameterName, parameterValue, parameterType
 
     # 通过正则匹配是否是报错注入
@@ -164,8 +164,8 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
 
     # 过滤一些css等后缀
     def filter_url(self, reqUrl):
-        noCheckedSuffix = ['css', 'js', 'jpg', 'gif', 'html', 'png', 'ico']
-        if reqUrl.split('.')[-1] in noCheckedSuffix:
+        noCheckedSuffix = ['css', 'js', 'jpg', 'gif', 'html', 'png', 'ico', 'svg', 'jpeg']
+        if reqUrl.rsplit('.')[-1] in noCheckedSuffix or urlparse(reqUrl).path.rsplit('.')[-1] in noCheckedSuffix:
             return True
         else:
             return False
@@ -341,14 +341,15 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
         parameterSQLsQueue = Queue(-1)  # payload队列
         for parameter in reqParameters:
             parameterName, parameterValue, parameterType = self.get_parameter_Name_Value_Type(parameter)
-            for dbms in self.fuzzSQL.payloads_dict:
-                for payload in self.fuzzSQL.payloads_dict[dbms]:
-                    parameterSQLsQueue.put([request, protocol, httpService, parameterName, parameterValue, payload,
-                                    parameterType, dbms, reqUrl])  # 构造新的参数值，带有sql测试语句
+            if parameterType != 2:      # 过滤掉cookies
+                for dbms in self.fuzzSQL.payloads_dict:
+                    for payload in self.fuzzSQL.payloads_dict[dbms]:
+                        parameterSQLsQueue.put([request, protocol, httpService, parameterName, parameterValue, payload,
+                                        parameterType, dbms, reqUrl])  # 构造新的参数值，带有sql测试语句
 
         # 多线程跑每个payload
         threads = []
-        for i in range(30):
+        for i in range(37):
             t = Thread(target=self.checkInject, args=(parameterSQLsQueue, ))
             t.start()
             threads.append(t)

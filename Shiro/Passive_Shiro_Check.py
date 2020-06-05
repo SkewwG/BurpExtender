@@ -145,12 +145,12 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
         # 获取请求的url
         reqUrl = self.get_request_url(protocol, reqHeaders)
 
-        print 'start check url: {}'.format(reqUrl)
-        if self.filter_url(reqUrl):
+
+        if self.filter_url(reqUrl) or 'google.com' in reqUrl or 'shodan.io' in reqUrl or 'baidu.com' in reqUrl:
             print 'not check url: {}'.format(reqUrl)
             return
 
-
+        print 'start check url: {}'.format(reqUrl)
         if not self.checkVul(reqUrl, request, httpService):
             print '[-] {}'.format(reqUrl)
 
