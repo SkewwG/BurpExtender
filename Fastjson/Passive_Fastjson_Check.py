@@ -254,7 +254,6 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory, IContextMenuFactory,
 
 
         if reqContentType == 4:         # json格式数据
-
             # 获取服务信息
             httpService = self.baseRequestResponse.getHttpService()
             host, port, protocol, ishttps = self.get_server_info(httpService)
